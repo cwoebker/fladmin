@@ -1,0 +1,10 @@
+{% extends "admin_layout.html" %}
+{% block title %}Home{% endblock %}
+{% block body %}
+<h3><a href="{{ url_for('admin.redis') }}">Redis</a></h3>
+<p>Admin interface to underlying Redis DB</p>
+<br />
+<h3><a href="/admin/files">Files</a></h3>
+<p>File manager for static directory</p>
+<br />
+{% endblock %}
