@@ -68,8 +68,8 @@ def requires_auth(f):
 #######
 
 
-@requires_auth
 @admin.route('/')
+@requires_auth
 def index():
     return render_template('admin.html')
 
@@ -78,16 +78,16 @@ def index():
 #########
 
 
-@requires_auth
 @admin.route('/redis')
+@requires_auth
 def redis():
     global redis_monitor
     stats = redis_monitor.getStats()
     return render_template('redis/index.html', stats=stats)
 
 
-@requires_auth
 @admin.route('/redis/wipe')
+@requires_auth
 def wipe():
     global conn
     conn.flushdb()
@@ -95,8 +95,8 @@ def wipe():
     return redirect('/admin/redis')
 
 
-@requires_auth
 @admin.route('/redis/list')
+@requires_auth
 def list():
     global redis_monitor
     stats = redis_monitor.getStats()
@@ -106,8 +106,8 @@ def list():
 
 
 # ajax view (json)
-@requires_auth
 @admin.route('/redis/ajax')
+@requires_auth
 def ajax():
     global redis_monitor
     stats = redis_monitor.getStats(True)
@@ -241,9 +241,9 @@ If path does not exist, will also throw 404 exception.
     return BASE_PATH, directory, path
 
 
-@requires_auth
 @admin.route('/files')
 @admin.route('/files/b/<path>')
+@requires_auth
 def files(path=None):
     # Get path and verify if it is valid
     base_path, directory, path = _normalize_path(path)
