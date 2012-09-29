@@ -46,7 +46,7 @@
                 {% if stat.role %} ({{ stat.role }}) {% endif %} 
                 {% if (stat.status == 'up') and (stat['keys'] > 0) %}
                  - <a href="{{ url_for('admin.wipe') }}">wipe</a>
-                 - <a href="{{ url_for('admin.list') }}">list</a>
+                 - <a href="{{ url_for('admin.browse') }}">browse</a>
                 {% endif %}
             </h1>
                 <div class="info_line">
@@ -101,13 +101,4 @@
         </div>
     {% endfor %}
     <div class="clear"></div>
-{% endblock %}
-{% block tail %}
-    <div id="footer">
-        <div id="footer_text">
-        <span>
-            powered by <a href="https://github.com/cool-shark/redimon">redimon</a>
-        </span>
-        </div>
-    </div>
 {% endblock %}

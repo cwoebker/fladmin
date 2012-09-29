@@ -4,9 +4,12 @@ import urlparse
 import shutil
 import re
 
+from collections import defaultdict
 from operator import itemgetter
 
-from flask import flash, redirect, Response, request, Blueprint, render_template, url_for, abort
+from flask import flash, redirect, Response, request, \
+                    Blueprint, render_template, url_for, \
+                    abort
 from werkzeug import secure_filename
 
 from flask.ext.admin import form
@@ -23,14 +26,17 @@ from stats import RedisMonitor
 
 admin = Blueprint('admin', __name__, template_folder='templates', static_folder='static')
 
-conn = None
+TYPE_TEMPLATES = {
+    'hash': 'redis/browse/types/hash.html'
+}
 
+conn = None
 redis_monitor = None
 
 
 def setup(connection, url):
-    conn = connection
     global conn
+    conn = connection
     global redis_monitor
     redis_monitor = RedisMonitor([url])
 
@@ -81,7 +87,6 @@ def index():
 @admin.route('/redis')
 @requires_auth
 def redis():
-    global redis_monitor
     stats = redis_monitor.getStats()
     return render_template('redis/index.html', stats=stats)
 
@@ -89,27 +94,61 @@ def redis():
 @admin.route('/redis/wipe')
 @requires_auth
 def wipe():
-    global conn
     conn.flushdb()
     flash("Database cleared.", 'info')
     return redirect('/admin/redis')
 
 
-@admin.route('/redis/list')
+@admin.route('/redis/delete')
 @requires_auth
-def list():
-    global redis_monitor
+def redis_del():
+    key = request.args.get('k')
+    key_type = key and conn.type(key)
+    if key:
+        if key_type != 'none':
+            conn.delete(key)
+    return redirect(url_for('admin.browse'))
+
+
+@admin.route('/redis/browse')
+@requires_auth
+def browse():
     stats = redis_monitor.getStats()
-    global conn
-    keys = conn.keys('*')
-    return render_template('redis/list.html', keys=keys, stat=stats[0])
+    keys_browse = {}
+    for key_b in conn.keys():
+        try:
+            keys_browse[conn.type(key_b)]
+        except KeyError:
+            keys_browse[conn.type(key_b)] = []
+        keys_browse[conn.type(key_b)].append(key_b)
+
+    data = None
+    key = request.args.get('k')
+    key_type = key and conn.type(key)  # don't call redis without a key
+    if key:
+        if key_type == 'none':  # bogus key, possibly bad paramenter
+            return redirect(url_for('admin.browse'))
+
+        data = {
+            'hash': lambda x: conn.hgetall(x),
+            'list': lambda x: conn.lrange(x, 0, -1),
+            'string': lambda x: [conn.get(x)],
+            'zset': lambda x: conn.zrange(x, 0, -1, withscores=True),
+            'set': lambda x: conn.smembers(x)
+
+        }[key_type](key)
+
+    return render_template(TYPE_TEMPLATES.get(key_type, 'redis/browse/index.html'),
+        data=data,
+        _key=key,
+        keys_browse=keys_browse,
+        stat=stats[0])
 
 
 # ajax view (json)
 @admin.route('/redis/ajax')
 @requires_auth
 def ajax():
-    global redis_monitor
     stats = redis_monitor.getStats(True)
     datetimeHandler = lambda obj: obj.isoformat() if isinstance(obj, datetime.datetime) else None
     return json.dumps(stats, default=datetimeHandler)
