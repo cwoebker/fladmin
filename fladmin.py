@@ -34,11 +34,14 @@ conn = None
 redis_monitor = None
 
 
-def setup(connection, url):
-    global conn
-    conn = connection
-    global redis_monitor
-    redis_monitor = RedisMonitor([url])
+def setup(connection, url, extras=['redis']):
+    if 'redis' in extras:
+        global conn
+        conn = connection
+        global redis_monitor
+        redis_monitor = RedisMonitor([url])
+    elif 'mongo' in extras:
+        pass
 
 ########
 # AUTH #
